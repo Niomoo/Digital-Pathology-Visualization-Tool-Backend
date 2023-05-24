@@ -1,0 +1,15 @@
+asgiref==3.4.1
+certifi==2021.5.30
+Django==3.2.19
+django-cors-headers==3.10.1
+django-filter==21.1
+djangorestframework==3.14.0
+djangorestframework-simplejwt==4.4.0
+importlib-metadata==4.8.3
+Markdown==3.3.7
+PyJWT==2.4.0
+pytz==2023.3
+sqlparse==0.4.4
+typing_extensions==4.1.1
+wincertstore==0.2
+zipp==3.6.0
