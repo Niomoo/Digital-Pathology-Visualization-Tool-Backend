@@ -12,7 +12,6 @@ class Project(models.Model):
   p_id = models.AutoField(primary_key=True)
   u_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name='projects')
   title = models.CharField(max_length=255)
-  type = models.CharField(max_length=255)
 
 class Image(models.Model):
   i_id = models.AutoField(primary_key=True)
@@ -23,7 +22,8 @@ class Image(models.Model):
 class Judgement(models.Model):
   j_id = models.AutoField(primary_key=True)
   i_id = models.ForeignKey(Image, on_delete=models.CASCADE, related_name='judgement')
-  first = models.CharField(max_length=255)
-  second = models.CharField(max_length=255, blank=True, null=True)
-  first_duration = models.DateTimeField(blank=True, null=True)
-  second_duration = models.DateTimeField(blank=True, null=True)
+  firstJudge = models.CharField(max_length=255)
+  secondJudge = models.CharField(max_length=255, blank=True, null=True)
+  firstDuration = models.CharField(max_length=255, blank=True, null=True)
+  secondDuration = models.CharField(max_length=255, blank=True, null=True)
+  created_time = models.DateTimeField(auto_now=True)

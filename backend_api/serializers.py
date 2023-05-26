@@ -4,19 +4,19 @@ from .models import User, Project, Image, Judgement
 class JudgementSerializer(serializers.ModelSerializer):
   class Meta:
     model = Judgement
-    fields = ['first', 'second', 'first_duration', 'second_duration']
+    fields = ['firstJudge', 'secondJudge', 'firstDuration', 'secondDuration']
 
 class ImageSerializer(serializers.ModelSerializer):
-  judgement = JudgementSerializer(many=True, read_only=True)
+  judgement = JudgementSerializer(many=True)
   class Meta:
     model = Image
-    fields = ['tissue', 'resolution', 'judgement']
+    fields = ['i_id', 'name', 'path']
 
 class ProjectSerializer(serializers.ModelSerializer):
-  images = ImageSerializer(many=True, read_only=True)
+  images = ImageSerializer(many=True)
   class Meta:
     model = Project
-    fields = ['p_id', 'title', 'type', 'path', 'images']
+    fields = ['p_id', 'title']
 
 class UserSerializer(serializers.ModelSerializer):
   projects = ProjectSerializer(many=True, read_only=True)

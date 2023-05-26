@@ -68,6 +68,7 @@ def judgement_list(request, pk, format=None):
     })
   return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['GET'])
 def read_dzi(request, file_path):
   isImage = '_files' in file_path
   if isImage:
@@ -76,3 +77,19 @@ def read_dzi(request, file_path):
   else:
     with open(file_path, 'rb') as f: 
       return HttpResponse(f.read(), content_type='application/xml')
+
+@api_view(['POST'])
+def post_judgement(request, format=None):
+  if request.method == 'POST':
+    serializer = JudgementSerializer(data=request.data)
+    if request.data['i_id_id'] is None:
+      user = User.objects.get(u_id=request.data['u_id'])
+      project = Project.objects.create(u_id=user, title=request.data['title'])
+      image = Image.objects.create(p_id=project, name=request.data['name'], path=request.data['path'])
+      request.data['i_id_id'] = image.i_id
+      serializer = JudgementSerializer(data=request.data)
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data, status=status.HTTP_201_CREATED)
+    print(serializer)
+    return Response(serializer.error, status=status.HTTP_400_BAD_REQUEST)

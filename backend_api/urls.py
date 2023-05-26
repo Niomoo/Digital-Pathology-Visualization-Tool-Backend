@@ -8,6 +8,7 @@ urlpatterns = [
     path('users/', views.user_list),
     path('projects/<str:pk>', views.project_list),
     path('dzi/<path:file_path>', views.read_dzi),
+    path('postJudgement/', views.post_judgement),
     # path('project/', views.ProjectListCreateAPIView.as_view(), name='project-list'),
     # path('project/<int:pk>', views.ProjectDetailAPIView.as_view(), name='project-detail'),
     # path('image/', views.UserListCreateAPIView.as_view(), name='image-list'),
