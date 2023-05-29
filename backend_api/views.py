@@ -37,8 +37,6 @@ def user_list(request, format=None):
 @api_view(['GET'])
 def project_list(request, pk, format=None):
   if request.method == 'GET':
-    # projects = Project.objects.filter(u_id=pk)
-    # serializer= ProjectSerializer(projects, many=True)
     pathPattern = "/home/nas/DZI/" + pk + r"/*.dzi"
     files = []
     for f in glob.glob(pathPattern):
@@ -50,20 +48,16 @@ def project_list(request, pk, format=None):
       })
     return JsonResponse(files, safe=False)
 
-@api_view(['GET', 'POST'])
+@api_view(['GET'])
 def judgement_list(request, pk, format=None):
   if request.method == 'GET':
     projects = Project.objects.filter(u_id=pk)
-    images = Image.objects.filter(p_id=projects.p_id)
-    judges = Judgement.objects.filter(i_id=images.i_id)
-    serializer= JudgementSerializer(judges, many=True)
-    return Response(serializer.data)
-  elif request.method == 'POST':
-    user = User.objects.get(u_id=request.data['id'])
-    projects = Project.objects.filter(u_id=user.u_id)
-    serializer = ProjectSerializer(projects, many=True)
+    judgements = list(Judgement.objects.none())
+    images = Image.objects.filter(p_id_id__in=projects)
+    judgements = Judgement.objects.filter(i_id_id__in=images)
+    serializer = JudgementSerializer(judgements, many=True)
     return JsonResponse({
-      'message': user.u_id,
+      'message': serializer.data,
       'status': status.HTTP_200_OK
     })
   return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -84,7 +78,9 @@ def post_judgement(request, format=None):
     serializer = JudgementSerializer(data=request.data)
     if request.data['i_id'] is None:
       user = User.objects.get(u_id=request.data['u_id'])
-      project = Project.objects.create(u_id=user, title=request.data['title'])
+      if len(Project.objects.filter(title=request.data['title'])) == 0:
+        Project.objects.create(u_id=user, title=request.data['title'])
+      project = Project.objects.get(title=request.data['title'])
       image = Image.objects.create(p_id=project, name=request.data['name'], path=request.data['path'])
       request.data['i_id'] = image.i_id
       serializer = JudgementSerializer(data=request.data)
