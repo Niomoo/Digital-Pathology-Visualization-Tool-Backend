@@ -82,14 +82,17 @@ def read_dzi(request, file_path):
 def post_judgement(request, format=None):
   if request.method == 'POST':
     serializer = JudgementSerializer(data=request.data)
-    if request.data['i_id_id'] is None:
+    if request.data['i_id'] is None:
       user = User.objects.get(u_id=request.data['u_id'])
       project = Project.objects.create(u_id=user, title=request.data['title'])
       image = Image.objects.create(p_id=project, name=request.data['name'], path=request.data['path'])
-      request.data['i_id_id'] = image.i_id
+      request.data['i_id'] = image.i_id
       serializer = JudgementSerializer(data=request.data)
     if serializer.is_valid():
-      serializer.save()
-      return Response(serializer.data, status=status.HTTP_201_CREATED)
-    print(serializer)
+      image = Image.objects.get(i_id=request.data['i_id'])
+      serializer.save(i_id=image)
+      return JsonResponse({
+      'message': user.u_id,
+      'status': status.HTTP_201_CREATED
+    })
     return Response(serializer.error, status=status.HTTP_400_BAD_REQUEST)

@@ -21,7 +21,7 @@ class Image(models.Model):
 
 class Judgement(models.Model):
   j_id = models.AutoField(primary_key=True)
-  i_id = models.ForeignKey(Image, on_delete=models.CASCADE, related_name='judgement')
+  i_id = models.ForeignKey(Image, on_delete=models.CASCADE, related_name='judgements')
   firstJudge = models.CharField(max_length=255)
   secondJudge = models.CharField(max_length=255, blank=True, null=True)
   firstDuration = models.CharField(max_length=255, blank=True, null=True)
