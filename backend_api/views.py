@@ -1,4 +1,5 @@
 from django.http import JsonResponse,  FileResponse, HttpResponse
+from django.core.serializers import serialize
 from rest_framework import generics, viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -52,14 +53,20 @@ def project_list(request, pk, format=None):
 def judgement_list(request, pk, format=None):
   if request.method == 'GET':
     projects = Project.objects.filter(u_id=pk)
-    judgements = list(Judgement.objects.none())
     images = Image.objects.filter(p_id_id__in=projects)
-    judgements = Judgement.objects.filter(i_id_id__in=images)
-    serializer = JudgementSerializer(judgements, many=True)
-    return JsonResponse({
-      'message': serializer.data,
-      'status': status.HTTP_200_OK
-    })
+    judgements = Judgement.objects.filter(i_id_id__in=images).select_related()
+    result = []
+    for j in judgements:
+      record = {}
+      record['title'] = j.i_id.p_id.title
+      record['name'] = j.i_id.name
+      record['firstJudge'] = j.firstJudge
+      record['secondJudge'] = j.secondJudge
+      record['firstDuration'] = j.firstDuration
+      record['secondDuration'] = j.secondDuration
+      record['created_time'] = j.created_time.strftime("%Y-%m-%d %H:%M:%S")
+      result.append(record)
+    return JsonResponse(result, safe=False)
   return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
