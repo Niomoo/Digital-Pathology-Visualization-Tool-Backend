@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from backend_api import views
 
 urlpatterns = [
-    path('signup/', views.sign_up),
+    path('register/', views.sign_up),
     path('users/', views.user_list),
     path('projects/<str:pk>', views.project_list),
     path('judgements/<int:pk>', views.judgement_list),

@@ -16,21 +16,33 @@ def sign_up(request, format=None):
     serializer = UserSerializer(data = request.data)
     if serializer.is_valid():
       serializer.save()
-      return Response(serializer.data, status=status.HTTP_201_CREATED)
+      user = User.objects.get(mail=request.data['mail'])
+      return JsonResponse({
+        'message': {
+          'u_id': user.u_id,
+          'name': user.name,
+          'mail': user.mail
+        },
+        'status': status.HTTP_201_CREATED
+      })
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET', 'POST'])
 def user_list(request, format=None):
   users = User.objects.all()
   if request.method == 'GET':
-    serializer= UserSerializer(users, many=True)
+    serializer = UserSerializer(users, many=True)
     return Response(serializer.data)
   elif request.method == 'POST':
     user = User.objects.get(mail=request.data['mail'], password=request.data['password'])
     projects = Project.objects.filter(u_id=user.u_id)
     serializer = ProjectSerializer(projects, many=True)
     return JsonResponse({
-      'message': user.u_id,
+      'message': {
+          'u_id': user.u_id,
+          'name': user.name,
+          'mail': user.mail
+        },
       'status': status.HTTP_200_OK
     })
   return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
