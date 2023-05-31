@@ -79,7 +79,6 @@ def judgement_list(request, pk, format=None):
       record['created_time'] = j.created_time.strftime("%Y-%m-%d %H:%M:%S")
       result.append(record)
     return JsonResponse(result, safe=False)
-  return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 def read_dzi(request, file_path):
@@ -90,6 +89,11 @@ def read_dzi(request, file_path):
   else:
     with open(file_path, 'rb') as f: 
       return HttpResponse(f.read(), content_type='application/xml')
+
+@api_view(['GET'])
+def read_heatmap(request, file_path):
+  with open(file_path, 'rb') as f:
+    return HttpResponse(f.read(), content_type='image/png')
 
 @api_view(['POST'])
 def post_judgement(request, format=None):
