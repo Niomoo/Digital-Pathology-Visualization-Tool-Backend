@@ -31,10 +31,10 @@ urlpatterns = [
     })),
     path('judgement/', views.JudgementViewSet.as_view({
         'get': 'get_db_judgements',
+        'post': 'add_judgement',
     })),
-    path('judgement/all', views.JudgementViewSet.as_view({
+    path('judgement/<str:id>', views.JudgementViewSet.as_view({
         'get': 'get_user_judgements',
-        'post': 'add_judgements',
     })),
     path('swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),

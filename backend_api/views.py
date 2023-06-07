@@ -161,9 +161,9 @@ class UserViewSet(viewsets.ModelViewSet):
     return Response(serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ProjectViewSet(viewsets.ModelViewSet):
-  queryset = Project.objects.all()
-  serializer_class = ProjectSerializer
 
+  queryset=Project.objects.all()
+  serializer_class=ProjectSerializer
   @action(detail=False,  methods=['get'])
   @swagger_auto_schema(
     operation_summary='Get all projects from the database',
@@ -173,11 +173,11 @@ class ProjectViewSet(viewsets.ModelViewSet):
     serializer = ProjectSerializer(projects, many=True)
     return Response(serializer.data)
 
-  @action(detail=False, methods=['get'], operationId='get_all_projects')
+  @action(detail=False, methods=['get'])
   @swagger_auto_schema(
-    operation_summary='Get all images of the related organ from the server',
+    operation_summary='Get all images of the related organ from the server'
   )
-  def get_all_projects(self, request, pk:str):
+  def get_all_projects(self, request, pk):
     pathPattern = "/home/nas/DZI/" + pk + r"/*.dzi"
     files = []
     for f in glob.glob(pathPattern):
@@ -187,55 +187,146 @@ class ProjectViewSet(viewsets.ModelViewSet):
         "name": name[0] + '.' + name[1],
         "path": f
       })
-    return JsonResponse(files, safe=False)
+    if len(files) > 0:
+      return JsonResponse(files, safe=False)
+    else:
+      return JsonResponse({
+        'message': 'No related files!', 
+        'status': status.HTTP_404_NOT_FOUND
+      })
 
 class JudgementViewSet(viewsets.ModelViewSet):  
-  queryset = Judgement.objects.all()
-  serializer_class = JudgementSerializer
 
   @action(detail=False,  methods=['get'])
+  @swagger_auto_schema(
+    operation_summary='Get all judgements from the database'
+  )
   def get_db_judgements(self, request):
-    judgements = Judgements.objects.all()
+    judgements = Judgement.objects.all()
     serializer = JudgementSerializer(judgements, many=True)
     return Response(serializer.data)
 
-  @action(detail=True, methods=['get'])
-  def get_user_judgements(self, request, pk):
-    projects = Project.objects.filter(u_id=pk)
-    images = Image.objects.filter(p_id_id__in=projects)
-    judgements = Judgement.objects.filter(i_id_id__in=images).select_related()
-    result = []
-    for j in judgements:
-      record = {}
-      record['title'] = j.i_id.p_id.title
-      record['name'] = j.i_id.name
-      record['firstJudge'] = j.firstJudge
-      record['secondJudge'] = j.secondJudge
-      record['firstDuration'] = j.firstDuration
-      record['secondDuration'] = j.secondDuration
-      record['created_time'] = j.created_time.strftime("%Y-%m-%d %H:%M:%S")
-      result.append(record)
-    return JsonResponse(result, safe=False)
-
-  @action(detail=True, methods=['post'])
-  def add_judgement(self, request):
-    serializer = JudgementSerializer(data=request.data)
-    if request.data['i_id'] is None:
-      user = User.objects.get(u_id=request.data['u_id'])
-      if len(Project.objects.filter(title=request.data['title'])) == 0:
-        Project.objects.create(u_id=user, title=request.data['title'])
-      project = Project.objects.get(title=request.data['title'])
-      image = Image.objects.create(p_id=project, name=request.data['name'], path=request.data['path'])
-      request.data['i_id'] = image.i_id
-      serializer = JudgementSerializer(data=request.data)
-    if serializer.is_valid():
-      image = Image.objects.get(i_id=request.data['i_id'])
-      serializer.save(i_id=image)
+  @action(detail=False, methods=['get'])
+  @swagger_auto_schema(
+    operation_summary='Get all judgements of the user from the database'
+  )
+  def get_user_judgements(self, request, id):
+    try:
+      projects = Project.objects.filter(u_id=id)
+      images = Image.objects.filter(p_id_id__in=projects)
+      judgements = Judgement.objects.filter(i_id_id__in=images).select_related()
+      result = []
+      for j in judgements:
+        record = {}
+        record['title'] = j.i_id.p_id.title
+        record['name'] = j.i_id.name
+        record['firstJudge'] = j.firstJudge
+        record['secondJudge'] = j.secondJudge
+        record['firstDuration'] = j.firstDuration
+        record['secondDuration'] = j.secondDuration
+        record['created_time'] = j.created_time.strftime("%Y-%m-%d %H:%M:%S")
+        result.append(record)
+      return JsonResponse(result, safe=False)
+    except:
       return JsonResponse({
-      'message': user.u_id,
-      'status': status.HTTP_201_CREATED
-    })
-    return Response(serializer.error, status=status.HTTP_400_BAD_REQUEST)
+        'message': 'No related files!', 
+        'status': status.HTTP_404_NOT_FOUND
+      })
+
+  queryset = Judgement.objects.all()
+  serializer_class = JudgementSerializer
+  @action(detail=False, methods=['post'])
+  @swagger_auto_schema(
+    operation_summary='Create judgement from the user response',
+    request_body=openapi.Schema(
+      type=openapi.TYPE_OBJECT,
+      properties={
+        'u_id': openapi.Schema(
+          type=openapi.TYPE_INTEGER,
+          in_=openapi.IN_BODY,
+          description="User ID"
+        ),
+        'i_id': openapi.Schema(
+          type=openapi.TYPE_INTEGER,
+          in_=openapi.IN_BODY,
+          description="Image IDv"
+        ),
+        'title': openapi.Schema(
+          type=openapi.TYPE_STRING,
+          in_=openapi.IN_BODY,
+          description="Project Title"
+        ),
+        'name': openapi.Schema(
+          type=openapi.TYPE_STRING,
+          in_=openapi.IN_BODY,
+          description="Image name"
+        ),
+        'path': openapi.Schema(
+          type=openapi.TYPE_STRING,
+          in_=openapi.IN_BODY,
+          description="Image path"
+        ),
+        'firstJudge': openapi.Schema(
+          type=openapi.TYPE_STRING,
+          in_=openapi.IN_BODY,
+          description="First judgement"
+        ),        
+        'secondJudge': openapi.Schema(
+          type=openapi.TYPE_STRING,
+          in_=openapi.IN_BODY,
+          description="Second judgement"
+        ),
+        'firstDuration': openapi.Schema(
+          type=openapi.TYPE_STRING,
+          in_=openapi.IN_BODY,
+          description="First duration"
+        ),
+        'secondDuration': openapi.Schema(
+          type=openapi.TYPE_STRING,
+          in_=openapi.IN_BODY,
+          description="Second duration"
+        ),
+      }
+    ),
+    responses={
+      201: openapi.Response(
+        description="Successful created",
+        schema=openapi.Schema(
+          type=openapi.TYPE_OBJECT,
+          properties={
+            'u_id': openapi.Schema(
+              type=openapi.TYPE_INTEGER,
+              description="User ID"
+            ),
+          }
+        )
+      )
+    }
+  )
+  def add_judgement(self, request):
+    try:
+      serializer = JudgementSerializer(data=request.data)
+      if request.data['i_id'] is None:
+        user = User.objects.get(u_id=request.data['u_id'])
+        if len(Project.objects.filter(title=request.data['title'])) == 0:
+          Project.objects.create(u_id=user, title=request.data['title'])
+        project = Project.objects.get(title=request.data['title'])
+        image = Image.objects.create(p_id=project, name=request.data['name'], path=request.data['path'])
+        request.data['i_id'] = image.i_id
+        serializer = JudgementSerializer(data=request.data)
+      if serializer.is_valid():
+        image = Image.objects.get(i_id=request.data['i_id'])
+        serializer.save(i_id=image)
+        return JsonResponse({
+        'message': user.u_id,
+        'status': status.HTTP_201_CREATED
+      })
+    except:
+      return JsonResponse({
+        'message': 'Bad request',
+        'status': status.HTTP_400_BAD_REQUEST
+      })
+        
 
 @api_view(['GET'])
 def read_dzi(request, file_path):
@@ -248,6 +339,9 @@ def read_dzi(request, file_path):
       return HttpResponse(f.read(), content_type='application/xml')
 
 @api_view(['GET'])
+@swagger_auto_schema(
+  operation_summary='Return heatmap image'
+)
 def read_heatmap(request, file_path):
   with open(file_path, 'rb') as f:
     return HttpResponse(f.read(), content_type='image/png')
