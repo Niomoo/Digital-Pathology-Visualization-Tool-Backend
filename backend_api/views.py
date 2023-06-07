@@ -1,40 +1,153 @@
 from django.http import JsonResponse,  FileResponse, HttpResponse
 from django.core.serializers import serialize
-from rest_framework import generics, viewsets, status
-from rest_framework.decorators import api_view
+from rest_framework import viewsets, status
+from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.decorators import api_view, action
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from .models import User, Project, Image, Judgement
 from .serializers import UserSerializer, ProjectSerializer, ImageSerializer, JudgementSerializer
 import os
 import glob
 # Create your views here.
 
-
-@api_view(['POST'])
-def sign_up(request, format=None):
-  if request.method == 'POST':
-    serializer = UserSerializer(data = request.data)
-    if serializer.is_valid():
-      serializer.save()
-      user = User.objects.get(mail=request.data['mail'])
-      return JsonResponse({
-        'message': {
-          'u_id': user.u_id,
-          'name': user.name,
-          'mail': user.mail
-        },
-        'status': status.HTTP_201_CREATED
-      })
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET', 'POST'])
-def user_list(request, format=None):
-  users = User.objects.all()
-  if request.method == 'GET':
+class UserViewSet(viewsets.ModelViewSet):
+  queryset = User.objects.all()
+  serializer_class = UserSerializer
+  
+  @action(detail=False, methods=['get'])
+  @swagger_auto_schema(
+    operation_summary='Get all users from the database'
+  )
+  def get_all_users(self, request):
+    users = User.objects.all()
     serializer = UserSerializer(users, many=True)
     return Response(serializer.data)
-  elif request.method == 'POST':
-    user = User.objects.get(mail=request.data['mail'], password=request.data['password'])
+
+  @action(detail=False, methods=['post'])
+  @swagger_auto_schema(
+    operation_summary='Create a new user account',
+    responses={
+      201: openapi.Response(
+        description="Successful created",
+        schema=openapi.Schema(
+          type=openapi.TYPE_OBJECT,
+          properties={
+            'u_id': openapi.Schema(
+              type=openapi.TYPE_INTEGER,
+              description="User ID"
+            ),
+            'name': openapi.Schema(
+              type=openapi.TYPE_STRING,
+              description="User name"
+            ),
+            'mail': openapi.Schema(
+              type=openapi.TYPE_STRING, 
+              description="User mail"
+            )
+          }
+        )
+      ),
+      409: openapi.Response(
+        description="Account existed",
+        schema=openapi.Schema(
+          type=openapi.TYPE_OBJECT,
+          properties={
+            'message': openapi.Schema(
+              type=openapi.TYPE_STRING,
+              description="The email has been registered!"
+            )
+          }
+        )
+      )
+    }
+  )
+  def sign_up(self, request):
+    try:
+      user = User.objects.get(mail=request.data['mail'])
+      return JsonResponse({
+        'message': 'The email has been registered!',
+        'status': status.HTTP_409_CONFLICT
+      })
+    except:
+      try:
+        serializer = UserSerializer(data = request.data)
+        if serializer.is_valid():
+          serializer.save()
+          user = User.objects.get(mail=request.data['mail'])
+          return JsonResponse({
+            'message': {
+              'u_id': user.u_id,
+              'name': user.name,
+              'mail': user.mail
+            },
+            'status': status.HTTP_201_CREATED
+          })
+      except:
+        return Response(serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+  @action(detail=True, methods=['post'])  
+  @swagger_auto_schema(
+    operation_summary='User login',
+    request_body=openapi.Schema(
+      type=openapi.TYPE_OBJECT,
+      properties={
+        'mail': openapi.Schema(
+          type=openapi.TYPE_STRING,
+          in_=openapi.IN_QUERY,
+          description="User mail"
+        ),
+        'password': openapi.Schema(
+          type=openapi.TYPE_STRING,
+          in_=openapi.IN_QUERY,
+          description="User password"
+        )
+      }
+    ),
+    responses={
+      200: openapi.Response(
+        description="Successful login",
+        schema=openapi.Schema(
+          type=openapi.TYPE_OBJECT,
+          properties={
+            'u_id': openapi.Schema(
+              type=openapi.TYPE_INTEGER,
+              description="User ID"
+            ),
+            'name': openapi.Schema(
+              type=openapi.TYPE_STRING,
+              description="User name"
+            ),
+            'mail': openapi.Schema(
+              type=openapi.TYPE_STRING, 
+              description="User mail"
+            )
+          }
+        )
+      ),
+      422: openapi.Response(
+        description="Invalid credentials",
+        schema=openapi.Schema(
+          type=openapi.TYPE_OBJECT,
+          properties={
+            'message': openapi.Schema(
+              type=openapi.TYPE_STRING,
+              description="Email or password is wrong!"
+            )
+          }
+        )
+      )
+    }
+  )
+  def login(self, request):
+    try:
+      user = User.objects.get(mail=request.data['mail'], password=request.data['password'])
+    except User.DoesNotExist:
+      return JsonResponse({
+        'message': 'Email or password is wrong!',
+        'status': status.HTTP_422_UNPROCESSABLE_ENTITY
+      })
     projects = Project.objects.filter(u_id=user.u_id)
     serializer = ProjectSerializer(projects, many=True)
     return JsonResponse({
@@ -45,11 +158,26 @@ def user_list(request, format=None):
         },
       'status': status.HTTP_200_OK
     })
-  return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['GET'])
-def project_list(request, pk, format=None):
-  if request.method == 'GET':
+class ProjectViewSet(viewsets.ModelViewSet):
+  queryset = Project.objects.all()
+  serializer_class = ProjectSerializer
+
+  @action(detail=False,  methods=['get'])
+  @swagger_auto_schema(
+    operation_summary='Get all projects from the database',
+  )
+  def get_db_projects(self, request):
+    projects = Project.objects.all()
+    serializer = ProjectSerializer(projects, many=True)
+    return Response(serializer.data)
+
+  @action(detail=False, methods=['get'], operationId='get_all_projects')
+  @swagger_auto_schema(
+    operation_summary='Get all images of the related organ from the server',
+  )
+  def get_all_projects(self, request, pk:str):
     pathPattern = "/home/nas/DZI/" + pk + r"/*.dzi"
     files = []
     for f in glob.glob(pathPattern):
@@ -61,9 +189,18 @@ def project_list(request, pk, format=None):
       })
     return JsonResponse(files, safe=False)
 
-@api_view(['GET'])
-def judgement_list(request, pk, format=None):
-  if request.method == 'GET':
+class JudgementViewSet(viewsets.ModelViewSet):  
+  queryset = Judgement.objects.all()
+  serializer_class = JudgementSerializer
+
+  @action(detail=False,  methods=['get'])
+  def get_db_judgements(self, request):
+    judgements = Judgements.objects.all()
+    serializer = JudgementSerializer(judgements, many=True)
+    return Response(serializer.data)
+
+  @action(detail=True, methods=['get'])
+  def get_user_judgements(self, request, pk):
     projects = Project.objects.filter(u_id=pk)
     images = Image.objects.filter(p_id_id__in=projects)
     judgements = Judgement.objects.filter(i_id_id__in=images).select_related()
@@ -80,24 +217,8 @@ def judgement_list(request, pk, format=None):
       result.append(record)
     return JsonResponse(result, safe=False)
 
-@api_view(['GET'])
-def read_dzi(request, file_path):
-  isImage = '_files' in file_path
-  if isImage:
-    with open(file_path, 'rb') as f:
-      return HttpResponse(f.read(), content_type='image/jpeg')
-  else:
-    with open(file_path, 'rb') as f: 
-      return HttpResponse(f.read(), content_type='application/xml')
-
-@api_view(['GET'])
-def read_heatmap(request, file_path):
-  with open(file_path, 'rb') as f:
-    return HttpResponse(f.read(), content_type='image/png')
-
-@api_view(['POST'])
-def post_judgement(request, format=None):
-  if request.method == 'POST':
+  @action(detail=True, methods=['post'])
+  def add_judgement(self, request):
     serializer = JudgementSerializer(data=request.data)
     if request.data['i_id'] is None:
       user = User.objects.get(u_id=request.data['u_id'])
@@ -115,3 +236,18 @@ def post_judgement(request, format=None):
       'status': status.HTTP_201_CREATED
     })
     return Response(serializer.error, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def read_dzi(request, file_path):
+  isImage = '_files' in file_path
+  if isImage:
+    with open(file_path, 'rb') as f:
+      return HttpResponse(f.read(), content_type='image/jpeg')
+  else:
+    with open(file_path, 'rb') as f: 
+      return HttpResponse(f.read(), content_type='application/xml')
+
+@api_view(['GET'])
+def read_heatmap(request, file_path):
+  with open(file_path, 'rb') as f:
+    return HttpResponse(f.read(), content_type='image/png')

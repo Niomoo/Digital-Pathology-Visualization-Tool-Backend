@@ -1,22 +1,42 @@
 from django.urls import path, include
 from rest_framework.urlpatterns import format_suffix_patterns
-from rest_framework.routers import DefaultRouter
 from backend_api import views
+from drf_yasg import openapi
+from drf_yasg.views import get_schema_view
+schema_view = get_schema_view(openapi.Info(
+    title="API",
+    default_version="v1.0.0"
+))
 
 urlpatterns = [
-    path('register/', views.sign_up),
-    path('users/', views.user_list),
-    path('projects/<str:pk>', views.project_list),
-    path('judgements/<int:pk>', views.judgement_list),
+    # path('register/', views.UserViewSet),
+    # path('users/', views.UserListDetail),
+    # path('projects/<str:pk>', views.ProjectListDetail),
+    # path('judgements/<int:pk>', views.JudgementListDetail),
+    # path('postJudgement/', views.JudgementViewSet),
     path('dzi/<path:file_path>', views.read_dzi),
     path('heatmap/<path:file_path>', views.read_heatmap),
-    path('postJudgement/', views.post_judgement),
-    # path('project/', views.ProjectListCreateAPIView.as_view(), name='project-list'),
-    # path('project/<int:pk>', views.ProjectDetailAPIView.as_view(), name='project-detail'),
-    # path('image/', views.UserListCreateAPIView.as_view(), name='image-list'),
-    # path('image/<int:pk>', views.UserDetailAPIView.as_view(), name='image-detail'),
-    # path('judgement/', views.UserListCreateAPIView.as_view(), name='judgement-list'),
-    # path('judgement/<int:pk>', views.UserDetailAPIView.as_view(), name='judgement-detail'),
+    path('user/', views.UserViewSet.as_view({
+        'get': 'get_all_users',
+        'post': 'sign_up',
+    })),
+    path('user/login', views.UserViewSet.as_view({
+        'post': 'login',
+    })),
+    path('project/', views.ProjectViewSet.as_view({
+        'get': 'get_db_projects',
+    })),
+    path('project/<str:pk>', views.ProjectViewSet.as_view({
+        'get': 'get_all_projects',
+    })),
+    path('judgement/', views.JudgementViewSet.as_view({
+        'get': 'get_db_judgements',
+    })),
+    path('judgement/all', views.JudgementViewSet.as_view({
+        'get': 'get_user_judgements',
+        'post': 'add_judgements',
+    })),
+    path('swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='scheme-redoc')
 ]
-
-urlpatterns = format_suffix_patterns(urlpatterns)
