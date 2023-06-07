@@ -9,11 +9,6 @@ schema_view = get_schema_view(openapi.Info(
 ))
 
 urlpatterns = [
-    # path('register/', views.UserViewSet),
-    # path('users/', views.UserListDetail),
-    # path('projects/<str:pk>', views.ProjectListDetail),
-    # path('judgements/<int:pk>', views.JudgementListDetail),
-    # path('postJudgement/', views.JudgementViewSet),
     path('dzi/<path:file_path>', views.read_dzi),
     path('heatmap/<path:file_path>', views.read_heatmap),
     path('user/', views.UserViewSet.as_view({

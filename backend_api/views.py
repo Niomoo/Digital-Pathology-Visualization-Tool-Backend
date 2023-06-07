@@ -306,11 +306,14 @@ class JudgementViewSet(viewsets.ModelViewSet):
   def add_judgement(self, request):
     try:
       serializer = JudgementSerializer(data=request.data)
+      user=User.objects.get(u_id=request.data['u_id'])
+      project = Project.objects.filter(u_id=user, title=request.data['title'])
+      if project.exists():
+        pass
+      else:
+        Project.objects.create(u_id=user, title=request.data['title'])
       if request.data['i_id'] is None:
-        user = User.objects.get(u_id=request.data['u_id'])
-        if len(Project.objects.filter(title=request.data['title'])) == 0:
-          Project.objects.create(u_id=user, title=request.data['title'])
-        project = Project.objects.get(title=request.data['title'])
+        project = Project.objects.get(u_id=user, title=request.data['title'])
         image = Image.objects.create(p_id=project, name=request.data['name'], path=request.data['path'])
         request.data['i_id'] = image.i_id
         serializer = JudgementSerializer(data=request.data)
