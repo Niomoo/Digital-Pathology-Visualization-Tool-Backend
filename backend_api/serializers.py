@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Project, Image, Judgement
+from .models import User, Project, Image, Judgement, Feedback
 
 class JudgementSerializer(serializers.ModelSerializer):
   class Meta:
@@ -23,3 +23,8 @@ class UserSerializer(serializers.ModelSerializer):
   class Meta:
     model = User
     fields = ['u_id', 'name', 'mail', 'password', 'projects']
+
+class FeedbackSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = Feedback
+    fields = ['f_id', 'firstName', 'lastName', 'email', 'message']

@@ -31,6 +31,9 @@ urlpatterns = [
     path('judgement/<str:id>', views.JudgementViewSet.as_view({
         'get': 'get_user_judgements',
     })),
+    path('feedback/', views.FeedbackViewSet.as_view({
+        'post': 'post_feedback',
+    })),
     path('swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='scheme-redoc')

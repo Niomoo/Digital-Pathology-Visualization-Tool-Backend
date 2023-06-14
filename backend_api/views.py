@@ -6,8 +6,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, action
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from .models import User, Project, Image, Judgement
-from .serializers import UserSerializer, ProjectSerializer, ImageSerializer, JudgementSerializer
+from .models import User, Project, Image, Judgement, Feedback
+from .serializers import UserSerializer, ProjectSerializer, ImageSerializer, JudgementSerializer, FeedbackSerializer
 import os
 import glob
 # Create your views here.
@@ -348,3 +348,25 @@ def read_dzi(request, file_path):
 def read_heatmap(request, file_path):
   with open(file_path, 'rb') as f:
     return HttpResponse(f.read(), content_type='image/png')
+
+class FeedbackViewSet(viewsets.ModelViewSet):
+  queryset = Feedback.objects.all()
+  serializer_class = FeedbackSerializer
+  @action(detail=False, methods=['post'])
+  def post_feedback(self, request):
+    try:
+      serializer = FeedbackSerializer(data = request.data)
+      if serializer.is_valid():
+        serializer.save()
+        feedback = Feedback.objects.get(email=request.data['email'])
+        return JsonResponse({
+          'message': {
+            'firstName': feedback.firstName,
+            'lastName': feedback.lastName,
+            'email': feedback.email,
+            'message': feedback.message,
+          },
+          'status': status.HTTP_201_CREATED
+        })
+    except:
+      return Response(serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

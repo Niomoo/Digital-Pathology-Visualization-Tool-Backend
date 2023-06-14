@@ -27,3 +27,10 @@ class Judgement(models.Model):
   firstDuration = models.CharField(max_length=255, blank=True, null=True)
   secondDuration = models.CharField(max_length=255, blank=True, null=True)
   created_time = models.DateTimeField(auto_now=True)
+
+class Feedback(models.Model):
+  f_id = models.AutoField(primary_key=True)
+  firstName = models.CharField(max_length=255)
+  lastName = models.CharField(max_length=255)
+  email = models.CharField(max_length=255)
+  message = models.CharField(max_length=255)
