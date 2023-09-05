@@ -5,6 +5,8 @@ django-cors-headers==3.10.1
 django-filter==21.1
 djangorestframework==3.14.0
 djangorestframework-simplejwt==4.4.0
+django-rest-swagger==2.2.0
+drf-yasg==1.21.7
 importlib-metadata==4.8.3
 Markdown==3.3.7
 PyJWT==2.4.0
