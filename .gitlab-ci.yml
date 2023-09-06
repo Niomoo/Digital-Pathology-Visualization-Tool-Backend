@@ -1,0 +1,71 @@
+stages:
+  - build
+  - test
+  - docker
+  - deploy
+
+variables:
+
+###################
+### Build stage ###
+###################
+backend-build:
+  stage: build
+  image: python:3.6.12
+  script:
+    - pip install -r requirements.txt
+    - python manage.py migrate
+    - echo "Build backend successfully!"
+
+##################
+### Test stage ###
+##################
+backend-test:
+  stage: test
+  image: python:3.6.12
+  script:
+    - echo "Start testing backend"
+    - python manage.py test
+    - echo "Test backend successfully!"
+  only:
+    - master
+    - develop
+
+####################
+### Docker stage ###
+####################
+backend-docker:
+  stage: docker
+  image: docker:stable
+  services:
+    - docker:dind
+  script:
+    - echo "Start building docker"
+    - docker login -u $CI_REGISTRY_USER -p $DOCKER_REGISTRY_TOKEN $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
+    - echo "Building docker successfully!"
+  only:
+    - master
+
+####################
+### Deploy stage ###
+####################
+backend-deploy:
+  stage: deploy
+  image: gitlab/dind:latest
+  before_script:
+    - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
+    - eval $(ssh-agent -s)
+    - echo "${SSH_PRIVATE_KEY_GCE}" | tr -d '\r' > deploy.pem
+    - chmod 400 deploy.pem
+    - ssh-add deploy.pem
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - 'echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+  script:
+    - ssh ${GCE_LOGIN_USER}@${GCP_VM_HOST} "docker images && docker ps -a"
+    - ssh ${GCE_LOGIN_USER}@${GCP_VM_HOST} "bash ~/clear-docker.sh Digital-Pathology-Visualization-Tool-Backend $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
+    - ssh ${GCE_LOGIN_USER}@${GCP_VM_HOST} "docker run -d --name Digital-Pathology-Visualization-Tool-Backend -p 8000:8000 $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
+  only:
+    - master
